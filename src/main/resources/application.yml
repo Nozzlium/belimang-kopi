@@ -1,0 +1,42 @@
+spring:
+    application:
+        name: belimang
+
+    datasource:
+        url: ${SPRING_DATASOURCE_URL}
+        username: ${SPRING_DATASOURCE_USERNAME}
+        password: ${SPRING_DATASOURCE_PASSWORD}
+        driver-class-name: org.postgresql.Driver
+    
+    jpa:
+        hibernate:
+            ddl-auto: validate
+        show-sql: true
+        properties:
+            hibernate:
+                "[format_sql]": true
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+    
+    flyway:
+        enabled: true
+        locations: classpath:db/migration
+        default-schema: public
+        clean-disabled: true
+        baseline-on-migrate: true
+        out-of-order: true
+
+server:
+    port: 8080
+    error:
+        include-stacktrace: never
+        include-exception: false
+        include-message: always
+        include-binding-errors: never
+    
+jwt:
+    secret: ${JWT_SECRET:w7!Qp9$z2@Lr8#Xv6^Tg4*Bn1&Jk5%Sd3}
+    
+logging:
+    level:
+        "[org.flywaydb]": INFO
+        "[org.springframework.boot.autoconfigure]": INFO 

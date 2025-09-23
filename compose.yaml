@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  db:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    container_name: db
+    environment:
+      POSTGRES_DB: belimang
+      POSTGRES_USER: belimang
+      POSTGRES_PASSWORD: belimang
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/belimang
+      SPRING_DATASOURCE_USERNAME: belimang
+      SPRING_DATASOURCE_PASSWORD: belimang
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
