@@ -1,0 +1,4 @@
+CREATE TABLE test (
+    id BIGSERIAL PRIMARY KEY,
+    value VARCHAR(255) NOT NULL
+);
