@@ -1,8 +1,9 @@
 version: '3.8'
+
 services:
   db:
-    image: public.ecr.aws/docker/library/postgres:16-alpine
-    container_name: db
+    image: postgis/postgis:15-3.4
+    container_name: belimang_db
     environment:
       POSTGRES_DB: belimang
       POSTGRES_USER: belimang
@@ -11,18 +12,38 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
-  app:
-    build: .
-    container_name: app
+  minio:
+    image: minio/minio:latest
+    container_name: belimang_minio
+    command: server /data --console-address ":9001"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/belimang
-      SPRING_DATASOURCE_USERNAME: belimang
-      SPRING_DATASOURCE_PASSWORD: belimang
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-belimang}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-belimang}
     ports:
-      - "8080:8080"
-    depends_on:
-      - db
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: belimang_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: belimang_grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
 
 volumes:
   db_data:
+  minio_data:
