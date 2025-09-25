@@ -13,6 +13,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final BeanRegistry beanRegistry;
+
+    public SecurityConfig(BeanRegistry beanRegistry) {
+        this.beanRegistry = beanRegistry;
+    }
+
     @Bean
     public SecurityFilterChain filterChain (HttpSecurity httpSecurity) throws Exception {
         httpSecurity
@@ -20,6 +26,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(registry -> {
+                    beanRegistry.getRegistry().forEach((url, guard) -> {
+                        registry.requestMatchers(url).hasAnyRole(guard.acceptedRoles());
+                    });
                     registry.anyRequest().permitAll();
                 });
         return httpSecurity.build();
