@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgis/postgis:15-3.4
+    image: public.ecr.aws/bigprofiles/postgres-postgis:15.1.0
     container_name: belimang_db
     environment:
       POSTGRES_DB: belimang
@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
 
   minio:
-    image: minio/minio:latest
+    image: public.ecr.aws/bitnami/minio/minio:latest
     container_name: belimang_minio
     command: server /data --console-address ":9001"
     environment:
@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus:latest
+    image: public.ecr.aws/bitnami/minio/prometheus:latest
     container_name: belimang_prometheus
     ports:
       - "9090:9090"
@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: public.ecr.aws/bitnami/minio/grafana:latest
     container_name: belimang_grafana
     ports:
       - "3000:3000"
