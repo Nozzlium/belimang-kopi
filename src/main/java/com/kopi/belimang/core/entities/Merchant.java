@@ -28,7 +28,7 @@ public class Merchant {
 
     private String imageUrl;
 
-    @Column(columnDefinition = "GEOMETRY(POINT,4326)")
+    @Column(columnDefinition = "GEOMETRY(POINT,4326)") //4326 adalah SRID (Spatial Reference System Identifier) dari sistem koordinat WGS 84.
     private Point location;
 
     @CreationTimestamp
