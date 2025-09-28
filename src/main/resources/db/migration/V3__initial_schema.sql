@@ -19,6 +19,7 @@ create table if not exists images (
 create table if not exists merchants (
 	id bigserial primary key,
 	category varchar not null,
+    name varchar not null,
 	image_url varchar,
 
 	created_at timestamp default current_timestamp,
