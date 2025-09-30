@@ -3,6 +3,7 @@ package com.kopi.belimang.merchant.service;
 import com.kopi.belimang.core.entities.Merchant;
 import com.kopi.belimang.core.entities.MerchantItem;
 import com.kopi.belimang.merchant.dto.*;
+import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
 import com.kopi.belimang.merchant.repository.MerchantItemRepository;
 import com.kopi.belimang.merchant.repository.MerchantRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,7 @@ public class MerchantService {
         Point point = geometryFactory.createPoint(new Coordinate(request.getLocation().getLon(), request.getLocation().getLat()));
         Merchant merchant = new Merchant();
         merchant.setCategory(request.getMerchantCategory());
+        merchant.setName(request.getName());
         merchant.setImageUrl(request.getImageUrl());
         merchant.setLocation(point);
         Long resultId= merchantRepository.save(merchant).getId();
@@ -77,6 +79,7 @@ public class MerchantService {
 
     @Transactional
     public CreateMerchantItemResponse createMerchantItem(Long merchantId,CreateMerchantItemRequest request) {
+        merchantRepository.findById(merchantId).orElseThrow(()-> new MerchantNotFoundException(merchantId));
         MerchantItem merchantItem = MerchantItem.builder()
                 .name(request.getName())
                 .merchantId(merchantId)
