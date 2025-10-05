@@ -1,7 +1,7 @@
 package com.kopi.belimang.auth.services;
 
-import com.kopi.belimang.auth.core.JwtUtil;
-import com.kopi.belimang.auth.core.UserClaim;
+import com.kopi.belimang.auth.core.jwt.JwtUtil;
+import com.kopi.belimang.auth.core.jwt.UserClaim;
 import com.kopi.belimang.auth.dto.TokenDto;
 import com.kopi.belimang.auth.exceptions.CredentialInvalidException;
 import com.kopi.belimang.auth.exceptions.DuplicateCredentialException;
