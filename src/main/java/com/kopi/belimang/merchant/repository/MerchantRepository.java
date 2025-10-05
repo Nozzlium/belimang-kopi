@@ -46,4 +46,40 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
             @Param("name") String name,
             @Param("category") String category
     );
+
+    @Query(value = """
+        SELECT 
+            *, ST_Distance(location, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)) AS distance
+        FROM
+            merchant
+        WHERE
+            (merchant_id = :merchantId) AND
+            (name ILIKE CONCAT('%', :name, '%')) AND
+            (category = :category)
+        ORDER BY
+            distance ASC
+        LIMIT :lmt OFFSET :offs
+    """, nativeQuery = true
+    )
+    List<Merchant> findNearbyMerchants(
+        @Param("lat") Double lat,
+        @Param("lon") Double lon,
+        @Param("merchantId") Long merchantId,
+        @Param("name") String name,
+        @Param("category") String category,
+        @Param("lmt") int lmt,
+        @Param("offs") int offs
+    );
+
+    @Query("SELECT m FROM Merchant m WHERE m.id IN :ids")
+    List<Merchant> findByIdIn(List<Long> ids);
+
+    @Query(value = """
+    SELECT m1.id AS id1, m2.id AS id2,
+           ST_Distance(m1.location, m2.location) AS distance
+    FROM merchants m1
+    JOIN merchants m2 ON m1.id <> m2.id
+    WHERE m1.id IN (:ids) AND m2.id IN (:ids)
+    """, nativeQuery = true)
+    List<Object[]> findPairwiseDistances(@Param("ids") List<Long> ids);
 }

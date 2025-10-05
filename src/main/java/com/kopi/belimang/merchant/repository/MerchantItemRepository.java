@@ -1,6 +1,5 @@
 package com.kopi.belimang.merchant.repository;
 
-import com.kopi.belimang.core.entities.Merchant;
 import com.kopi.belimang.core.entities.MerchantItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -48,4 +47,13 @@ public interface MerchantItemRepository extends JpaRepository<MerchantItem, Long
             @Param("name") String name,
             @Param("category") String category
     );
+
+    @Query(value = """
+        SELECT 
+            *
+        FROM merchant_items mi
+        LEFT JOIN merchants m ON mi.merchant_id = m.id
+        WHERE mi.id IN :merchantItemIds
+    """, nativeQuery = true)
+    List<MerchantItem> findMerchangItemsWithMerchantByMerchantItemId(@Param("merchantItemIds") List<String> merchantItemIds);
 }
