@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app: db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: us-west1-docker.pkg.dev/projectsprint-000001/ps-docker-repo/team-kopi-db:v1
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: belimang
+            - name: POSTGRES_PASSWORD
+              value: belimang
+            - name: POSTGRES_DB
+              value: belimang
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+spec:
+  type: NodePort
+  selector:
+    app: db
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30081

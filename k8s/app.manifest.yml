@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: belimang
+  labels:
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+        - name: app
+          image: us-west1-docker.pkg.dev/projectsprint-000001/ps-docker-repo/team-coffe:3dc6b13
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://db-service:5432/belimang
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "belimang"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "belimang"
+            - name: SERVER_PORT
+              value: "8080"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"

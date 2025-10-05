@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     build:
@@ -13,19 +15,14 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U belimang"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   minio:
     image: quay.io/minio/minio:latest
     container_name: belimang_minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-belimang}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-belimang}
+      MINIO_ROOT_USER: belimang
+      MINIO_ROOT_PASSWORD: belimang
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -33,23 +30,20 @@ services:
       - minio_data:/data
     restart: unless-stopped
 
-  prometheus:
-    image: quay.io/prometheus/prometheus:latest
-    container_name: belimang_prometheus
+  app:
+    build: .
+    container_name: belimang_app
     ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    restart: unless-stopped
-
-  grafana:
-    image: public.ecr.aws/ubuntu/grafana:latest
-    container_name: belimang_grafana
-    ports:
-      - "3000:3000"
+      - "8080:8080"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/belimang
+      SPRING_DATASOURCE_USERNAME: belimang
+      SPRING_DATASOURCE_PASSWORD: belimang
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+    depends_on:
+      - db
+      - minio
     restart: unless-stopped
 
 volumes:
