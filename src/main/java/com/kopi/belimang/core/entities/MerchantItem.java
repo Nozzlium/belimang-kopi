@@ -20,8 +20,9 @@ public class MerchantItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "merchant_id")
-    private Long merchantId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "merchant_id", referencedColumnName = "id")
+    private Merchant merchant;
 
     @Column(nullable = false)
     private String category;
@@ -41,4 +42,7 @@ public class MerchantItem {
     @UpdateTimestamp
     @Column(nullable = false)
     private ZonedDateTime updatedAt;
+
+    @Transient
+    private int quantity;
 }

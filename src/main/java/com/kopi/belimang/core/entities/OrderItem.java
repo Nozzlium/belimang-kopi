@@ -1,41 +1,45 @@
 package com.kopi.belimang.core.entities;
 
-import com.kopi.belimang.merchant.mapper.MerchantCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.locationtech.jts.geom.Point;
 
 import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "merchants")
+@Table(name = "order_items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Merchant {
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Column(nullable = false)
+    private Long itemId;
 
-    private String name;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "order_detail_id", referencedColumnName = "id")
+    private OrderDetail orderDetail;
 
     @Column(nullable = false)
     private String category;
 
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private Long price;
+
     private String imageUrl;
 
-    @Column(columnDefinition = "GEOGRAPHY(POINT,4326)")
-    private Point location;
+    @Column(nullable = false)
+    private Integer quantity;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private ZonedDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private ZonedDateTime updatedAt;
 }

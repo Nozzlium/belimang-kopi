@@ -15,6 +15,7 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -82,7 +83,7 @@ public class MerchantService {
         merchantRepository.findById(merchantId).orElseThrow(()-> new MerchantNotFoundException(merchantId));
         MerchantItem merchantItem = MerchantItem.builder()
                 .name(request.getName())
-                .merchantId(merchantId)
+                .merchant(Merchant.builder().id(merchantId).build())
                 .price(request.getPrice())
                 .category(request.getProductCategory())
                 .imageUrl(request.getImageUrl())
