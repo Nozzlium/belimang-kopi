@@ -1,8 +1,8 @@
-version: '3.8'
-
 services:
   db:
-    image: public.ecr.aws/bigprofiles/postgres-postgis:15.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile.postgis
     container_name: belimang_db
     environment:
       POSTGRES_DB: belimang
@@ -13,9 +13,14 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U belimang"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
-    image: public.ecr.aws/bitnami/minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: belimang_minio
     command: server /data --console-address ":9001"
     environment:
@@ -29,7 +34,7 @@ services:
     restart: unless-stopped
 
   prometheus:
-    image: public.ecr.aws/bitnami/minio/prometheus:latest
+    image: quay.io/prometheus/prometheus:latest
     container_name: belimang_prometheus
     ports:
       - "9090:9090"
@@ -38,10 +43,13 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: public.ecr.aws/bitnami/minio/grafana:latest
+    image: public.ecr.aws/ubuntu/grafana:latest
     container_name: belimang_grafana
     ports:
       - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
     restart: unless-stopped
 
 volumes:
