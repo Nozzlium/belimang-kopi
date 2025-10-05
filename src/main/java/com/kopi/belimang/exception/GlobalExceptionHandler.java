@@ -1,9 +1,11 @@
 package com.kopi.belimang.exception;
 
+import com.kopi.belimang.auth.exceptions.DuplicateCredentialException;
 import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,5 +51,15 @@ public class GlobalExceptionHandler {
         // Customize the response as needed
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                              .body(new ErrorResponse("Internal Server Error"));
+    }
+
+    @ExceptionHandler(DuplicateCredentialException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateCredentialException(DuplicateCredentialException ex) {
+        return ResponseEntity.status(HttpStatus.valueOf(409)).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateCredentialException(UsernameNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.valueOf(400)).body(new ErrorResponse(ex.getMessage()));
     }
 }
