@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.kopi.belimang.core.entities.Merchant;
 import com.kopi.belimang.core.entities.MerchantItem;
@@ -37,6 +38,7 @@ import com.google.ortools.constraintsolver.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 
+@Service
 public class OrderService {
 
     @Autowired

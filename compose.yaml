@@ -3,9 +3,10 @@ version: '3.8'
 services:
   db:
     build:
-      context: .
+      image: us-west1-docker.pkg.dev/projectsprint-000001/ps-docker-repo/team-kopi-db:v1
       dockerfile: Dockerfile.postgis
     container_name: belimang_db
+    user: root
     environment:
       POSTGRES_DB: belimang
       POSTGRES_USER: belimang
@@ -19,6 +20,7 @@ services:
   minio:
     image: quay.io/minio/minio:latest
     container_name: belimang_minio
+    user: root
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: belimang
@@ -33,6 +35,7 @@ services:
   app:
     build: .
     container_name: belimang_app
+    user: root
     ports:
       - "8080:8080"
     environment:
