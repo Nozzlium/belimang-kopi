@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Optional;
 
@@ -39,15 +40,23 @@ public class GuardProcessor implements BeanPostProcessor, BeanFactoryAware {
                 Guard annotation = AnnotationUtils.findAnnotation(method, Guard.class);
                 if ( annotation != null ) {
                     RequestMapping methodLevelAnnotation = AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class);
-                    String[] methodUrls = Optional.ofNullable(methodLevelAnnotation)
-                            .map(v -> v.value())
-                            .orElse(new String[]{""});
+                    String[] methodUrls = new String[]{""};
+                    if ( methodLevelAnnotation != null ) {
+                        if ( methodLevelAnnotation.value().length > 0 ) {
+                            // Make sure method urls is assigned to a not empty array so the later loop will be executed
+                            methodUrls = methodLevelAnnotation.value();
+                        }
+                    }
 
                     for (String controllerUrl : controllerUrls) {
                         for (String methodUrl : methodUrls) {
                             String url = "" + controllerUrl + methodUrl;
-                            if ( !url.isEmpty() ) {
-                                getBeanRegistry().put(url, annotation);
+                            if ( url.isEmpty() ) {
+                                continue;
+                            }
+
+                            for ( RequestMethod httpMethod : methodLevelAnnotation.method() ) {
+                                getBeanRegistry().put(url, httpMethod.name(), annotation.acceptedRoles());
                             }
                         }
                     }

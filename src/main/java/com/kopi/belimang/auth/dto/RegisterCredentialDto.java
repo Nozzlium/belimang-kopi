@@ -15,5 +15,6 @@ public class RegisterCredentialDto {
 
     @NotNull
     @Email
+    @NotBlank
     private String email;
 }

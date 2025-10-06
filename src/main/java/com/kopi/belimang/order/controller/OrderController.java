@@ -1,5 +1,6 @@
 package com.kopi.belimang.order.controller;
 
+import com.kopi.belimang.auth.core.guard.Guard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ public class OrderController {
 
     // GET /merchants/nearby/{lat},{long}
     @GetMapping("/merchants/nearby/{lat},{long}")
+    @Guard(acceptedRoles = {"USER"})
     public ResponseEntity<GetMerchantResponse> getNearbyMerchants(@PathVariable String lat, @PathVariable("long") String lon) {
         GetMerchantResponse resp = orderService.searchNearbyMerchants(lat, lon, null);
 
@@ -34,6 +36,7 @@ public class OrderController {
 
     // POST /users/estimate
     @PostMapping("/users/estimate")
+    @Guard(acceptedRoles = {"USER"})
     public ResponseEntity<EstimateResponseBody> estimateOrder(
         @RequestBody OrderRequestBody requestBody
     ) throws Exception {
@@ -44,6 +47,7 @@ public class OrderController {
 
     // POST /users/orders
     @PostMapping("/users/orders")
+    @Guard(acceptedRoles = {"USER"})
     public ResponseEntity<OrderPlaceResponseBody> createOrder(
         @RequestBody OrderPlaceRequestBody requestBody
     ) {
@@ -54,6 +58,7 @@ public class OrderController {
 
     // GET /users/orders
     @GetMapping("/users/orders")
+    @Guard(acceptedRoles = {"USER"})
     public ResponseEntity<OrderListResponseBody> getOrders(
         @RequestParam(required = false) String merchantId,
         @RequestParam(required = false) String limit,
