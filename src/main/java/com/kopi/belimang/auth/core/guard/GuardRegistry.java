@@ -3,21 +3,23 @@ package com.kopi.belimang.auth.core.guard;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class GuardRegistry {
-    private Map<String, Guard> registry;
+    private Set<GuardRegistryEntry> registry;
 
     public GuardRegistry() {
-        registry = new HashMap<>();
+        registry = new HashSet<>();
     }
 
-    public void put(String key, Guard value) {
-        registry.put(key, value);
+    public void put(String url, String httpMethod, String[] acceptedRoles) {
+        registry.add(new GuardRegistryEntry(url, httpMethod, acceptedRoles));
     }
 
-    public Map<String, Guard> getRegistry() {
+    public Set<GuardRegistryEntry> getRegistry() {
         return registry;
     }
 }

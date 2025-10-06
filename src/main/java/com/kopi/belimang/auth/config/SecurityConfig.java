@@ -35,8 +35,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(registry -> {
-                    guardRegistry.getRegistry().forEach((url, guard) -> {
-                        registry.requestMatchers(url).hasAnyAuthority(guard.acceptedRoles());
+                    guardRegistry.getRegistry().forEach((entry) -> {
+                        registry.requestMatchers(entry.httpMethod(), entry.url()).hasAnyAuthority(entry.acceptedRoles());
                     });
                     registry.requestMatchers("admin/**").permitAll();
                     registry.requestMatchers("user/**").permitAll();
