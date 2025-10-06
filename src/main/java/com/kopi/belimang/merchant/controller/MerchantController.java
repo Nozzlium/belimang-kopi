@@ -26,6 +26,19 @@ public class MerchantController {
         if (request.getMerchantCategory() != null && !VALID_CATEGORIES.contains(request.getMerchantCategory())) {
             throw new IllegalArgumentException("Invalid merchant category: " + request.getMerchantCategory());
         }
+        if (request.getLocation() == null) {
+            throw new IllegalArgumentException("Location is required");
+        }
+
+        LocationRequest location = request.getLocation();
+
+        if (location.getLat() == null) {
+            throw new IllegalArgumentException("Latitude is required");
+        }
+
+        if (location.getLon() == null) {
+            throw new IllegalArgumentException("Longitude is required");
+        }
 
         CreateMerchantResponse response = merchantService.createMerchant(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -35,11 +48,11 @@ public class MerchantController {
     @Guard(acceptedRoles = {"ADMIN"})
     public ResponseEntity<GetMerchantResponse> getMerchants(
             @RequestParam(required = false) String merchantId,
-            @RequestParam(defaultValue = "10") Integer limit,
+            @RequestParam(defaultValue = "5") Integer limit,
             @RequestParam(defaultValue = "0") Integer offset,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String merchantCategory,
-            @RequestParam(required = false) String createdAt
+            @RequestParam(defaultValue = "desc") String createdAt
     ) {
         if (merchantCategory != null && !VALID_CATEGORIES.contains(merchantCategory)) {
             throw new IllegalArgumentException("Invalid merchant category: " + merchantCategory);
@@ -78,11 +91,11 @@ public class MerchantController {
     public ResponseEntity<GetMerchantItemResponse> getMerchantItems(
             @PathVariable Long merchantId,
             @RequestParam(required = false) Long itemId,
-            @RequestParam(defaultValue = "10") Integer limit,
+            @RequestParam(defaultValue = "5") Integer limit,
             @RequestParam(defaultValue = "0") Integer offset,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String productCategory,
-            @RequestParam(required = false) String createdAt
+            @RequestParam(defaultValue = "desc") String createdAt
     ) {
         if (productCategory != null && !VALID_PRODUCT_CATEGORIES.contains(productCategory)) {
             throw new IllegalArgumentException("Invalid product category: " + productCategory);

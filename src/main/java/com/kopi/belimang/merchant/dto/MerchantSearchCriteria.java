@@ -24,7 +24,7 @@ public class MerchantSearchCriteria {
     }
 
     public Integer getValidatedLimit() {
-        return (limit != null && limit > 0) ? Math.min(limit, 100) : 10; // max 100
+        return (limit != null && limit > 0) ? limit : 5;
     }
 
     public Integer getValidatedOffset() {

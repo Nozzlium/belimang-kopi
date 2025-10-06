@@ -1,5 +1,7 @@
 package com.kopi.belimang.merchant.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kopi.belimang.core.deserializer.StrictStringDeserializer;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -7,6 +9,7 @@ import lombok.Data;
 public class CreateMerchantItemRequest {
     @NotBlank(message = "Name is required")
     @Size(min = 2, max = 30, message = "Name must be between 2 and 30 characters")
+    @JsonDeserialize(using = StrictStringDeserializer.class)
     private String name;
 
     @NotNull(message = "Product category is required")

@@ -3,7 +3,7 @@ spring:
         name: belimang
 
     datasource:
-        url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db:5432/belimang}
+        url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/belimang}
         username: ${SPRING_DATASOURCE_USERNAME:belimang}
         password: ${SPRING_DATASOURCE_PASSWORD:belimang}
         driver-class-name: org.postgresql.Driver
@@ -39,8 +39,8 @@ logging:
         "[org.springframework.boot.autoconfigure]": INFO
 
 minio:
-  endpoint: ${MINIO_ENDPOINT:minio:9000}
-  publicEndpoint: ${MINIO_PUBLIC_ENDPOINT:minio:9001}
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000/}
+  publicEndpoint: ${MINIO_PUBLIC_ENDPOINT:http://localhost:9001/}
   accessKey: ${MINIO_ACCESS_KEY:belimang}
   secretKey: ${MINIO_SECRET_KEY:belimang}
   secure: ${MINIO_SECURE:false}

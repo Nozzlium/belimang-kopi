@@ -1,9 +1,8 @@
 ALTER TABLE orders
-ADD COLUMN total_distance BIGINT,
-ADD COLUMN estimated_delivery_time BIGINT,
-ADD COLUMN total_price BIGINT;
+    ADD COLUMN IF NOT EXISTS total_distance BIGINT,
+    ADD COLUMN IF NOT EXISTS estimated_delivery_time BIGINT,
+    ADD COLUMN IF NOT EXISTS total_price BIGINT;
 
-ALTER TABLE order_details DROP COLUMN items;
 
 CREATE TABLE IF NOT EXISTS order_items (
     id BIGSERIAL PRIMARY KEY,
