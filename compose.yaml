@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: us-west1-docker.pkg.dev/projectsprint-000001/ps-docker-repo/team-kopi-db:v1
+    context: .
     container_name: belimang_db
     user: root
     environment:

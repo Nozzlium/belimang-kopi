@@ -23,7 +23,7 @@ public class AuthController {
                 .body(authService.loginAsAdmin(credential.getUsername(), credential.getPassword()));
     }
 
-    @PostMapping("/user/login")
+    @PostMapping("/users/login")
     ResponseEntity<TokenDto> loginUser(@Valid @RequestBody LoginCredentialDto credential) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(authService.loginAsUser(credential.getUsername(), credential.getPassword()));
@@ -35,7 +35,7 @@ public class AuthController {
                 .body(authService.registerAsAdmin(credential.getUsername(), credential.getPassword(), credential.getEmail()));
     }
 
-    @PostMapping("/user/register")
+    @PostMapping("/users/register")
     ResponseEntity<TokenDto> registerUser(@Valid @RequestBody RegisterCredentialDto credential) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(authService.registerAsUser(credential.getUsername(), credential.getPassword(), credential.getEmail()));

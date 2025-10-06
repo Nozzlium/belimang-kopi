@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kopi.belimang.merchant.dto.GetMerchantResponse;
+import com.kopi.belimang.merchant.dto.MerchantSearchCriteria;
 import com.kopi.belimang.order.dto.EstimateResponseBody;
 import com.kopi.belimang.order.dto.GetAllOrdersParams;
 import com.kopi.belimang.order.dto.OrderListResponseBody;
@@ -28,9 +29,33 @@ public class OrderController {
     // GET /merchants/nearby/{lat},{long}
     @GetMapping("/merchants/nearby/{lat},{long}")
     @Guard(acceptedRoles = {"USER"})
-    public ResponseEntity<GetMerchantResponse> getNearbyMerchants(@PathVariable String lat, @PathVariable("long") String lon) {
-        GetMerchantResponse resp = orderService.searchNearbyMerchants(lat, lon, null);
+    public ResponseEntity<GetMerchantResponse> getNearbyMerchants(
+        @PathVariable String lat,
+        @PathVariable("long") String lon,
+        @RequestParam(required = false) String merchantId,
+        @RequestParam(required = false) String limit,
+        @RequestParam(required = false) String offset,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String merchantCategory
+    ) {
+        int limitVal = 5;
+        int offsetVal = 0;
+        try {
+            if (limit != null) limitVal = Integer.parseInt(limit);
+        } catch (NumberFormatException e) { /* use default */ }
+        try {
+            if (offset != null) offsetVal = Integer.parseInt(offset);
+        } catch (NumberFormatException e) { /* use default */ }
 
+        // Pass all params to service (adjust as needed for your service signature)
+        MerchantSearchCriteria criteria = MerchantSearchCriteria.builder()
+            .merchantId(merchantId != null ? Long.parseLong(merchantId) : null)
+            .name(name)
+            .merchantCategory(merchantCategory)
+            .limit(limitVal)
+            .offset(offsetVal)
+            .build();
+        GetMerchantResponse resp = orderService.searchNearbyMerchants(lat, lon, criteria);
         return ResponseEntity.ok().body(resp);
     }
 

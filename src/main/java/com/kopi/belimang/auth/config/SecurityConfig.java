@@ -41,8 +41,10 @@ public class SecurityConfig {
                     guardRegistry.getRegistry().forEach((entry) -> {
                         registry.requestMatchers(entry.httpMethod(), entry.url()).hasAnyAuthority(entry.acceptedRoles());
                     });
-                    registry.requestMatchers("admin/**").permitAll();
-                    registry.requestMatchers("user/**").permitAll();
+                    registry.requestMatchers("admin/register").permitAll();
+                    registry.requestMatchers("users/register").permitAll();
+                    registry.requestMatchers("admin/login").permitAll();
+                    registry.requestMatchers("users/login").permitAll();
                 })
                 .authenticationProvider(daoAuthenticationProvider())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(customEntryPoint))

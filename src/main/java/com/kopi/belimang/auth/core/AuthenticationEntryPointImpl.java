@@ -17,6 +17,6 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint {
                          AuthenticationException authException) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Authentication is required to access this resource.\"}");
+        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Authentication is required to access belimang.\"}");
     }
 }
