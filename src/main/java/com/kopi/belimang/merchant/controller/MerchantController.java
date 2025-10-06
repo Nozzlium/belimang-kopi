@@ -1,5 +1,6 @@
 package com.kopi.belimang.merchant.controller;
 
+import com.kopi.belimang.auth.core.guard.Guard;
 import com.kopi.belimang.merchant.dto.*;
 import com.kopi.belimang.merchant.service.MerchantService;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ public class MerchantController {
     private final MerchantService merchantService;
 
     @PostMapping
+    @Guard(acceptedRoles = {"ADMIN"})
     public ResponseEntity<CreateMerchantResponse> createMerchant(@Valid @RequestBody CreateMerchantRequest request){
 
         if (request.getMerchantCategory() != null && !VALID_CATEGORIES.contains(request.getMerchantCategory())) {
@@ -30,6 +32,7 @@ public class MerchantController {
     }
 
     @GetMapping
+    @Guard(acceptedRoles = {"ADMIN"})
     public ResponseEntity<GetMerchantResponse> getMerchants(
             @RequestParam(required = false) String merchantId,
             @RequestParam(defaultValue = "10") Integer limit,
@@ -56,6 +59,7 @@ public class MerchantController {
     }
 
     @PostMapping("/{merchantId}/items")
+    @Guard(acceptedRoles = {"ADMIN"})
     public ResponseEntity<CreateMerchantItemResponse> createMerchantItem(
             @PathVariable Long merchantId,
             @Valid @RequestBody CreateMerchantItemRequest request
@@ -70,6 +74,7 @@ public class MerchantController {
     }
 
     @GetMapping("/{merchantId}/items")
+    @Guard(acceptedRoles = {"ADMIN"})
     public ResponseEntity<GetMerchantItemResponse> getMerchantItems(
             @PathVariable Long merchantId,
             @RequestParam(required = false) Long itemId,
