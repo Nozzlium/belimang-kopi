@@ -2,11 +2,15 @@ package com.kopi.belimang.order.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class OrderRequestBody {
     private UserLocation userLocation;
     private List<OrderMerchantRequestBody> orders;
@@ -14,15 +18,16 @@ public class OrderRequestBody {
     @Data
     @NoArgsConstructor
     public static class UserLocation {
-        private float lat;
-        private float lon;
+        private Double lat;
+        private Double lon;
     }
 
     @Data
     @NoArgsConstructor
     public static class OrderMerchantRequestBody {
         private String merchantId;
-        private boolean isStartingPoint;
+        @JsonProperty("isStartingPoint")
+        private boolean startingPoint;
         private List<OrderItemRequestBody> items;
     }
 

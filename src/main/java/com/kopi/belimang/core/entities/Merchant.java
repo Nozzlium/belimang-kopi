@@ -1,6 +1,5 @@
 package com.kopi.belimang.core.entities;
 
-import com.kopi.belimang.merchant.mapper.MerchantCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.locationtech.jts.geom.Point;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "merchants")
@@ -38,4 +38,7 @@ public class Merchant {
     @UpdateTimestamp
     @Column(nullable = false)
     private ZonedDateTime updatedAt;
+
+    @OneToMany(mappedBy = "merchant", fetch = FetchType.EAGER)
+    private List<MerchantItem> items;
 }

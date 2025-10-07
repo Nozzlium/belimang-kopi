@@ -2,6 +2,9 @@ package com.kopi.belimang.exception;
 
 import com.kopi.belimang.auth.exceptions.DuplicateCredentialException;
 import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
+import com.kopi.belimang.order.exception.ItemAndMerchantMismatchException;
+import com.kopi.belimang.order.exception.MerchantTooFarException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -45,6 +48,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MerchantNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleMerchantNotFoundException(MerchantNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Merchant not found"));
+    }
+
+    @ExceptionHandler(ItemAndMerchantMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleItemAndMerchantMismatchException(ItemAndMerchantMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(MerchantTooFarException.class)
+    public ResponseEntity<ErrorResponse> handleMerchantTooFar(MerchantTooFarException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

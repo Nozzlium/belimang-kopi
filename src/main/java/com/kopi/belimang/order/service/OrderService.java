@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,7 @@ import com.kopi.belimang.core.entities.Order;
 import com.kopi.belimang.core.entities.OrderDetail;
 import com.kopi.belimang.core.entities.OrderItem;
 import com.kopi.belimang.merchant.dto.MerchantSearchCriteria;
+import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
 import com.kopi.belimang.merchant.repository.MerchantItemRepository;
 import com.kopi.belimang.merchant.repository.MerchantRepository;
 import com.kopi.belimang.order.dto.OrderRequestBody;
@@ -34,6 +38,7 @@ import com.kopi.belimang.order.dto.OrderPlaceResponseBody;
 import com.kopi.belimang.order.dto.OrderRequestBody.OrderItemRequestBody;
 import com.kopi.belimang.order.dto.OrderRequestBody.OrderMerchantRequestBody;
 import com.kopi.belimang.order.dto.OrderRequestBody.UserLocation;
+import com.kopi.belimang.order.exception.ItemAndMerchantMismatchException;
 import com.kopi.belimang.order.repostiory.OrderDetailRepository;
 import com.kopi.belimang.order.repostiory.OrderRepository;
 import com.google.ortools.Loader;
@@ -57,91 +62,125 @@ public class OrderService {
     @Autowired
     private OrderDetailRepository orderDetailRepository;
 
-    public EstimateResponseBody estimate(OrderRequestBody orderRequestBody) throws Exception, NumberFormatException {
+    public EstimateResponseBody estimate(OrderRequestBody orderRequestBody) throws ItemAndMerchantMismatchException, MerchantNotFoundException, NumberFormatException, Exception {
         Long totalPrice = 0L;
-        Map<Long, OrderDetail> resMap = new HashMap<>();
 
         List<OrderMerchantRequestBody> orders = orderRequestBody.getOrders();
+        if (orders == null) throw new IllegalArgumentException("Orders cannot be empty.");
 
-        List<Merchant> merchants = new ArrayList<>();
-        Map<Long, MerchantItem> itemIdToTemp = new HashMap<>(); 
+        List<Merchant> tempMerchants = new ArrayList<>();
 
         int startingIndex = -1;
         Set<Long> merchantIds = new HashSet<Long>();
         List<Long> itemIds = new ArrayList<Long>();
         
+        System.out.println(orderRequestBody);
         for (int i = 0; i < orders.size(); i++) {
             OrderMerchantRequestBody order = orders.get(i);
             if (order.isStartingPoint()) {
-                if (startingIndex != -1) throw new Exception();
+                if (startingIndex != -1) throw new IllegalArgumentException("Starting point must be specified, status: " + startingIndex);
                 startingIndex = i;
             }
             merchantIds.add(Long.parseLong(order.getMerchantId()));
+            Merchant tempMerch = Merchant
+                .builder()
+                .id(Long.parseLong(order.getMerchantId()))
+                .items(new ArrayList<>())
+                .build();
 
+            if (order.getItems() == null || order.getItems().size() == 0) {
+                throw new IllegalArgumentException("Items cannot be empty.");
+            }
             for (OrderItemRequestBody item : order.getItems()) {
                 Long itemId = Long.parseLong(item.getItemId());
                 itemIds.add(itemId);
-                itemIdToTemp.put(itemId, MerchantItem
+                MerchantItem tempItem = MerchantItem
                     .builder()
                     .id(itemId)
                     .quantity(item.getQuantity())
-                    .build()
-                );
-            }
-        }
-
-        List<MerchantItem> merchantItems = merchantItemRepository.findMerchangItemsWithMerchantByMerchantItemId(itemIds);
-        if (merchantItems.size() != itemIds.size()) throw new EntityNotFoundException("One or more item IDs do not exist.");
-
-        for (MerchantItem merchantItem : merchantItems) {
-            Merchant merchant = merchantItem.getMerchant();
-            OrderDetail orderDetail;
-            if (resMap.containsKey(merchant.getId())) {
-                orderDetail = resMap.get(merchant.getId());
-            } else {
-                orderDetail = OrderDetail
-                    .builder()
-                    .merchant(merchant)
-                    .items(new ArrayList<>())
+                    .merchant(tempMerch)
                     .build();
-                resMap.put(merchant.getId(), orderDetail);
+                tempMerch.getItems().add(tempItem);
             }
-            if (merchant == null || !merchants.contains(merchant)) throw new EntityNotFoundException("One or more merchant IDs do not exist.");
-            
-            MerchantItem temp = itemIdToTemp.get(merchantItem.getId());
-            if (merchant.getId() != temp.getMerchant().getId()) throw new Exception("One or more items do not belong to the specified merchant.");
+            tempMerchants.add(tempMerch);
+        }
+        if (startingIndex == -1) throw new IllegalArgumentException("Starting point must be specified, status: " + startingIndex);
 
-            totalPrice += merchantItem.getPrice() * temp.getQuantity();
-            merchants.add(merchant);
-            orderDetail.getItems().add(OrderItem
+        List<Object[]> merchantItems = merchantItemRepository.findMerchangItemsWithMerchantByMerchantItemId(itemIds);
+        if (merchantItems.size() != itemIds.size()) throw new ItemAndMerchantMismatchException("One or more item IDs do not exist.");
+
+        Map<Long, MerchantItem> itemIdToTemp = new HashMap<>();
+        for (Object[] row : merchantItems) {
+            Double lat = row[6] != null ? (Double) row[6] : null;
+            Double lon = row[7] != null ? (Double) row[7] : null;
+            if (lat == null || lon == null) throw new ItemAndMerchantMismatchException("One or more merchant IDs do not exist.");
+            GeometryFactory geometryFactory = new GeometryFactory();
+            Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
+            MerchantItem mi = MerchantItem
                 .builder()
-                .itemId(merchantItem.getId())
-                .orderDetail(orderDetail)
-                .category(merchantItem.getCategory())
-                .name(merchantItem.getName())
-                .price(merchantItem.getPrice())
-                .imageUrl(merchantItem.getImageUrl())
-                .quantity(temp.getQuantity())
-                .createdAt(merchantItem.getCreatedAt())
-                .build()
-            );
+                .id(((Number) row[0]).longValue())
+                .merchant(Merchant
+                    .builder()
+                    .id(((Number) row[1]).longValue())
+                    .location(point)
+                    .build())
+                .category((String) row[2])
+                .name((String) row[3])
+                .price(row[4] != null ? ((Number) row[4]).longValue() : 0)
+                .imageUrl((String) row[5])
+                .build();
+            itemIdToTemp.put(mi.getId(), mi);
         }
 
-        if (merchants.size() != merchantIds.size()) {
-            throw new EntityNotFoundException("One or more merchant IDs do not exist.");
+        List<OrderDetail> orderDetails = new ArrayList<>();
+        for (Merchant tempMerch : tempMerchants) {
+            OrderDetail od = OrderDetail
+                .builder()
+                .merchant(Merchant
+                    .builder()
+                    .id(tempMerch.getId())
+                    .build())
+                .items(new ArrayList<>())
+                .build();
+            for (MerchantItem tempItem : tempMerch.getItems()) {
+                MerchantItem realItem = itemIdToTemp.get(tempItem.getId());
+                if (realItem == null || !realItem.getMerchant().getId().equals(tempMerch.getId())) {
+                    throw new ItemAndMerchantMismatchException("One or more item IDs do not exist.");
+                }
+
+                tempMerch.setLocation(realItem.getMerchant().getLocation());
+                OrderItem oi = OrderItem
+                    .builder()
+                    .itemId(realItem.getId())
+                    .name(realItem.getName())
+                    .category(realItem.getCategory())
+                    .price(realItem.getPrice())
+                    .quantity(tempItem.getQuantity())
+                    .imageUrl(realItem.getImageUrl())
+                    .createdAt(ZonedDateTime.now(ZoneId.systemDefault()))
+                    .build();
+                od.getItems().add(oi);
+                totalPrice += realItem.getPrice() * tempItem.getQuantity();
+            }
+            orderDetails.add(od);
+        }
+
+        if (
+            (tempMerchants.size() != orderDetails.size())
+        ) {
+            throw new ItemAndMerchantMismatchException("One or more merchant IDs do not exist.");
         }
         
-        long[][] distanceMatrix = generateDistanceMatrix(orderRequestBody.getUserLocation(), merchants);
+        long[][] distanceMatrix = generateDistanceMatrix(orderRequestBody.getUserLocation(), tempMerchants);
         long distanceEstimate = solveTsp(distanceMatrix, startingIndex);
         long estimateDeliveryTime = distanceEstimate / 40000; // in minutes
 
-        List<OrderDetail> res = resMap.values().stream().toList();
         Order toSave = Order
                 .builder()
                 .totalDistance(distanceEstimate)
                 .estimatedDeliveryTime(estimateDeliveryTime)
                 .totalPrice(totalPrice)
-                .orderDetails(res)
+                .orderDetails(orderDetails)
                 .build();
         orderRepository.save(toSave);
         
@@ -362,7 +401,7 @@ public class OrderService {
         }
     }
 
-    private long[][] generateDistanceMatrix(UserLocation userLocation, List<Merchant> merchants) throws Exception {
+    private long[][] generateDistanceMatrix(UserLocation userLocation, List<Merchant> merchants) throws MerchantNotFoundException {
         long[][] distanceMatrix = new long[merchants.size()][merchants.size()];
         int startingJ = 0;
         for (int i = 0; i < merchants.size(); i++) {
@@ -374,7 +413,7 @@ public class OrderService {
                     starting.getLocation().getY(),
                     starting.getLocation().getX()
                 );
-                if (distanceFromUser > 3000) throw new Exception();
+                if (distanceFromUser > 3000) throw new MerchantNotFoundException("Merchant with id " + starting.getId() + " is too far: " + distanceFromUser + " meters (max: 3000 meters)");
 
                 if (j != i) {
                     Merchant dest = merchants.get(j);
