@@ -1,16 +1,20 @@
-package com.kopi.belimang.merchant.dto;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Builder;
-import lombok.Data;
+package com.kopi.belimang.order.dto;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 
-@Data
-@Builder
-public class GetMerchantResponse {
+import com.fasterxml.jackson.annotation.JsonFormat;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class NearbyMerchantResponse {
     @Data
     @Builder
     public static class LocationResponse {
@@ -35,12 +39,31 @@ public class GetMerchantResponse {
 
     @Data
     @Builder
+    public static class MerchantItemResponse {
+        private String itemId;
+        private String name;
+        private String productCategory;
+        private long price;
+        private String imageUrl;
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS'Z'")
+        private ZonedDateTime createdAt;
+    }
+
+    @Data
+    @Builder
     public static class MetaResponse {
         private Integer limit;
         private Integer offset;
         private Long total;
     }
 
+    @Data
+    @Builder
+    public static class MerchantAndItemResponse {
+        MerchantResponse merchant;
+        private List<MerchantItemResponse> items;
+    }
+
     private MetaResponse meta;
-    private List<MerchantResponse> data;
+    private List<MerchantAndItemResponse> data;
 }

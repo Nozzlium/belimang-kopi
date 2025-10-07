@@ -1,14 +1,14 @@
 package com.kopi.belimang.order.service;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +17,17 @@ import com.kopi.belimang.core.entities.MerchantItem;
 import com.kopi.belimang.core.entities.Order;
 import com.kopi.belimang.core.entities.OrderDetail;
 import com.kopi.belimang.core.entities.OrderItem;
-import com.kopi.belimang.merchant.dto.GetMerchantResponse;
 import com.kopi.belimang.merchant.dto.MerchantSearchCriteria;
 import com.kopi.belimang.merchant.repository.MerchantItemRepository;
 import com.kopi.belimang.merchant.repository.MerchantRepository;
 import com.kopi.belimang.order.dto.OrderRequestBody;
+import com.kopi.belimang.order.dto.NearbyMerchantResponse.LocationResponse;
+import com.kopi.belimang.order.dto.NearbyMerchantResponse.MerchantAndItemResponse;
+import com.kopi.belimang.order.dto.NearbyMerchantResponse.MerchantItemResponse;
+import com.kopi.belimang.order.dto.NearbyMerchantResponse.MerchantResponse;
 import com.kopi.belimang.order.dto.EstimateResponseBody;
 import com.kopi.belimang.order.dto.GetAllOrdersParams;
+import com.kopi.belimang.order.dto.NearbyMerchantResponse;
 import com.kopi.belimang.order.dto.OrderListResponseBody;
 import com.kopi.belimang.order.dto.OrderPlaceRequestBody;
 import com.kopi.belimang.order.dto.OrderPlaceResponseBody;
@@ -64,7 +68,7 @@ public class OrderService {
 
         int startingIndex = -1;
         Set<Long> merchantIds = new HashSet<Long>();
-        List<String> itemIds = new ArrayList<String>();
+        List<Long> itemIds = new ArrayList<Long>();
         
         for (int i = 0; i < orders.size(); i++) {
             OrderMerchantRequestBody order = orders.get(i);
@@ -76,7 +80,7 @@ public class OrderService {
 
             for (OrderItemRequestBody item : order.getItems()) {
                 Long itemId = Long.parseLong(item.getItemId());
-                itemIds.add(item.getItemId());
+                itemIds.add(itemId);
                 itemIdToTemp.put(itemId, MerchantItem
                     .builder()
                     .id(itemId)
@@ -168,7 +172,7 @@ public class OrderService {
 
     
     @Transactional
-    public GetMerchantResponse searchNearbyMerchants(String latStr, String lonStr, MerchantSearchCriteria criteria) {
+    public NearbyMerchantResponse searchNearbyMerchants(String latStr, String lonStr, MerchantSearchCriteria criteria) {
         int validatedLimit = criteria.getValidatedLimit();
         int validatedOffset = criteria.getValidatedOffset();
 
@@ -177,17 +181,64 @@ public class OrderService {
             lat = Double.parseDouble(latStr);
             lon = Double.parseDouble(lonStr);
         } catch (NumberFormatException e) {
-                return GetMerchantResponse.builder()
-                        .data(new ArrayList<>())
-                        .meta(GetMerchantResponse.MetaResponse.builder()
-                                .limit(validatedLimit)
-                                .offset(validatedOffset)
-                                .total(0L)
-                                .build())
-                        .build();
+                throw e;
         }
 
-        List<Merchant> merchants = merchantRepository.findNearbyMerchants(lat, lon, criteria.getMerchantId(), criteria.getName(), criteria.getMerchantCategory(), validatedLimit, validatedOffset);
+        List<Object[]> merchants = merchantRepository.findNearbyMerchants(lat, lon, criteria.getMerchantId(), criteria.getName(), criteria.getMerchantCategory(), validatedLimit, validatedOffset);
+        Map<Long, MerchantAndItemResponse> merchantMap = new HashMap<>();
+        for (Object[] row : merchants) {
+            Long merchantId = ((Number) row[0]).longValue();
+            MerchantAndItemResponse merchAndItem = merchantMap.containsKey(merchantId) ? merchantMap.get(merchantId) : null;
+            if (merchAndItem == null) {    
+                String merchantName = (String) row[1];
+                String merchantCategory = (String) row[2];
+                String imageUrl = (String) row[3];
+                Double latt = (Double) row[4]; // handle as needed
+                Double lonn = (Double) row[5]; // handle as needed
+                Object createdAt = row[6]; // handle as needed
+                ZonedDateTime zonedCreatedAt = null;
+                if (createdAt instanceof java.sql.Timestamp) {
+                    zonedCreatedAt = ((java.sql.Timestamp) createdAt).toInstant().atZone(ZoneId.systemDefault());
+                }
+                
+                merchAndItem = MerchantAndItemResponse
+                    .builder()
+                    .merchant(MerchantResponse.builder()
+                        .merchantId(merchantId.toString())
+                        .name(merchantName)
+                        .merchantCategory(merchantCategory)
+                        .imageUrl(imageUrl)
+                        .location(LocationResponse.builder()
+                            .lat(latt)
+                            .lon(lonn)
+                            .build())
+                        .createdAt(zonedCreatedAt)
+                        .build())
+                    .items(new ArrayList<>())
+                    .build();
+                merchantMap.put(merchantId, merchAndItem);
+            }
+            Long itemId = row[7] != null ? ((Number) row[7]).longValue() : null;
+            if (itemId == null) continue; // no item associated
+            String itemName = (String) row[8];
+            String productCategory = (String) row[9];
+            Long price = row[10] != null ? ((Number) row[10]).longValue() : 0;
+            String itemImageUrl = (String) row[11];
+            Object itemCreatedAt = row[12]; // handle as needed
+            ZonedDateTime itemZonedCreatedAt = null;
+            if (itemCreatedAt instanceof java.sql.Timestamp) {
+                itemZonedCreatedAt = ((java.sql.Timestamp) itemCreatedAt).toInstant().atZone(ZoneId.systemDefault());
+            }
+            MerchantItemResponse item = MerchantItemResponse.builder()
+                .itemId(itemId.toString())
+                .name(itemName)
+                .productCategory(productCategory)
+                .price(price)
+                .imageUrl(itemImageUrl)
+                .createdAt(itemZonedCreatedAt)
+                .build();
+            merchAndItem.getItems().add(item);
+        }
 
         long total = merchantRepository.countWithFilters(
                 criteria.getMerchantId(),
@@ -195,13 +246,9 @@ public class OrderService {
                 criteria.getMerchantCategory()
         );
 
-        List<GetMerchantResponse.MerchantResponse> merchantData = merchants.stream()
-                .map(this::convertToMerchantResponse)
-                .collect(Collectors.toList());
-
-        return GetMerchantResponse.builder()
-                .data(merchantData)
-                .meta(GetMerchantResponse.MetaResponse.builder()
+        return NearbyMerchantResponse.builder()
+                .data(merchantMap.values().stream().toList())
+                .meta(NearbyMerchantResponse.MetaResponse.builder()
                         .limit(validatedLimit)
                         .offset(validatedOffset)
                         .total(total)
@@ -355,31 +402,6 @@ public class OrderService {
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return (long)(R * c); // distance in meters
-    }
-
-    private GetMerchantResponse.MerchantResponse convertToMerchantResponse(Merchant merchant) {
-        return GetMerchantResponse.MerchantResponse.builder()
-                .merchantId(merchant.getId())
-                .name(merchant.getName())
-                .merchantCategory(merchant.getCategory())
-                .imageUrl(merchant.getImageUrl())
-                .location(extractLocation(merchant.getLocation()))
-                .createdAt(merchant.getCreatedAt())
-                .build();
-    }
-
-    private GetMerchantResponse.LocationResponse extractLocation(Point point) {
-        if (point == null) {
-            return GetMerchantResponse.LocationResponse.builder()
-                    .lat(null)
-                    .lon(null)
-                    .build();
-        }
-
-        return GetMerchantResponse.LocationResponse.builder()
-                .lat(point.getY())
-                .lon(point.getX())
-                .build();
     }
 
 }

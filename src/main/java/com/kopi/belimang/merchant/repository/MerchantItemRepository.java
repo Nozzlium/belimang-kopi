@@ -55,5 +55,5 @@ public interface MerchantItemRepository extends JpaRepository<MerchantItem, Long
         LEFT JOIN merchants m ON mi.merchant_id = m.id
         WHERE mi.id IN :merchantItemIds
     """, nativeQuery = true)
-    List<MerchantItem> findMerchangItemsWithMerchantByMerchantItemId(@Param("merchantItemIds") List<String> merchantItemIds);
+    List<MerchantItem> findMerchangItemsWithMerchantByMerchantItemId(@Param("merchantItemIds") List<Long> merchantItemIds);
 }

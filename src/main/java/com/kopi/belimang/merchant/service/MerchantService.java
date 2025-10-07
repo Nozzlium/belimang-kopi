@@ -126,7 +126,7 @@ public class MerchantService {
 
     private GetMerchantResponse.MerchantResponse convertToMerchantItemResponse(Merchant merchant) {
         return GetMerchantResponse.MerchantResponse.builder()
-                .merchantId(merchant.getId())
+                .merchantId(merchant.getId().toString())
                 .name(merchant.getName())
                 .merchantCategory(merchant.getCategory())
                 .imageUrl(merchant.getImageUrl())

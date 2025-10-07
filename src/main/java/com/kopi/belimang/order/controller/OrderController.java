@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kopi.belimang.merchant.dto.GetMerchantResponse;
 import com.kopi.belimang.merchant.dto.MerchantSearchCriteria;
 import com.kopi.belimang.order.dto.EstimateResponseBody;
 import com.kopi.belimang.order.dto.GetAllOrdersParams;
+import com.kopi.belimang.order.dto.NearbyMerchantResponse;
 import com.kopi.belimang.order.dto.OrderListResponseBody;
 import com.kopi.belimang.order.dto.OrderPlaceRequestBody;
 import com.kopi.belimang.order.dto.OrderPlaceResponseBody;
@@ -29,7 +29,7 @@ public class OrderController {
     // GET /merchants/nearby/{lat},{long}
     @GetMapping("/merchants/nearby/{lat},{long}")
     @Guard(acceptedRoles = {"USER"})
-    public ResponseEntity<GetMerchantResponse> getNearbyMerchants(
+    public ResponseEntity<NearbyMerchantResponse> getNearbyMerchants(
         @PathVariable String lat,
         @PathVariable("long") String lon,
         @RequestParam(required = false) String merchantId,
@@ -55,7 +55,7 @@ public class OrderController {
             .limit(limitVal)
             .offset(offsetVal)
             .build();
-        GetMerchantResponse resp = orderService.searchNearbyMerchants(lat, lon, criteria);
+        NearbyMerchantResponse resp = orderService.searchNearbyMerchants(lat, lon, criteria);
         return ResponseEntity.ok().body(resp);
     }
 
