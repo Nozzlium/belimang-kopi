@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   db:
-    context: .
+    build:
+      context: .
+      dockerfile: Dockerfile.postgis
     container_name: belimang_db
     user: root
     environment:
