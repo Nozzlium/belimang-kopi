@@ -39,10 +39,9 @@ import com.kopi.belimang.order.dto.OrderRequestBody.OrderItemRequestBody;
 import com.kopi.belimang.order.dto.OrderRequestBody.OrderMerchantRequestBody;
 import com.kopi.belimang.order.dto.OrderRequestBody.UserLocation;
 import com.kopi.belimang.order.exception.ItemAndMerchantMismatchException;
+import com.kopi.belimang.order.exception.MerchantTooFarException;
 import com.kopi.belimang.order.repostiory.OrderDetailRepository;
 import com.kopi.belimang.order.repostiory.OrderRepository;
-import com.google.ortools.Loader;
-import com.google.ortools.constraintsolver.*;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -73,8 +72,6 @@ public class OrderService {
         int startingIndex = -1;
         Set<Long> merchantIds = new HashSet<Long>();
         List<Long> itemIds = new ArrayList<Long>();
-        
-        System.out.println(orderRequestBody);
         for (int i = 0; i < orders.size(); i++) {
             OrderMerchantRequestBody order = orders.get(i);
             if (order.isStartingPoint()) {
@@ -82,9 +79,15 @@ public class OrderService {
                 startingIndex = i;
             }
             merchantIds.add(Long.parseLong(order.getMerchantId()));
+            Long orderMerchantId;
+            try {
+                orderMerchantId = Long.parseLong(order.getMerchantId());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("One or more merchant IDs are not valid.");
+            }
             Merchant tempMerch = Merchant
                 .builder()
-                .id(Long.parseLong(order.getMerchantId()))
+                .id(orderMerchantId)
                 .items(new ArrayList<>())
                 .build();
 
@@ -92,11 +95,16 @@ public class OrderService {
                 throw new IllegalArgumentException("Items cannot be empty.");
             }
             for (OrderItemRequestBody item : order.getItems()) {
-                Long itemId = Long.parseLong(item.getItemId());
-                itemIds.add(itemId);
+                Long orderMerchantItemid;
+                try {
+                    orderMerchantItemid = Long.parseLong(item.getItemId());
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("One or more item IDs are not valid.");
+                }
+                itemIds.add(orderMerchantItemid);
                 MerchantItem tempItem = MerchantItem
                     .builder()
-                    .id(itemId)
+                    .id(orderMerchantItemid)
                     .quantity(item.getQuantity())
                     .merchant(tempMerch)
                     .build();
@@ -107,7 +115,6 @@ public class OrderService {
         if (startingIndex == -1) throw new IllegalArgumentException("Starting point must be specified, status: " + startingIndex);
 
         List<Object[]> merchantItems = merchantItemRepository.findMerchangItemsWithMerchantByMerchantItemId(itemIds);
-        if (merchantItems.size() != itemIds.size()) throw new ItemAndMerchantMismatchException("One or more item IDs do not exist.");
 
         Map<Long, MerchantItem> itemIdToTemp = new HashMap<>();
         for (Object[] row : merchantItems) {
@@ -172,8 +179,9 @@ public class OrderService {
         }
         
         long[][] distanceMatrix = generateDistanceMatrix(orderRequestBody.getUserLocation(), tempMerchants);
-        long distanceEstimate = solveTsp(distanceMatrix, startingIndex);
-        long estimateDeliveryTime = distanceEstimate / 40000; // in minutes
+        long distanceEstimate = calculateRouteDistance(tspNearestNeighbor(distanceMatrix, startingIndex), distanceMatrix, false);
+        System.out.println("Distance estimate: " + distanceEstimate + " meters");
+        long estimateDeliveryTime = (distanceEstimate * 60) / 40000; // in minutes
 
         Order toSave = Order
                 .builder()
@@ -365,56 +373,62 @@ public class OrderService {
             .build();
     }
 
-    public long solveTsp(long[][] distanceMatrix, int startingIndex) throws Exception {
-        Loader.loadNativeLibraries();
+    public static List<Integer> tspNearestNeighbor(long[][] distanceMatrix, int start) {
+        int n = distanceMatrix.length;
+        boolean[] visited = new boolean[n];
+        List<Integer> route = new ArrayList<>();
+        int current = start;
+        route.add(current);
+        visited[current] = true;
 
-        int size = distanceMatrix.length;
-        RoutingIndexManager manager = new RoutingIndexManager(size, 1, startingIndex); // 0 is the starting index
-        RoutingModel routing = new RoutingModel(manager);
-
-        int transitCallbackIndex = routing.registerTransitCallback((long fromIndex, long toIndex) -> {
-            int fromNode = manager.indexToNode(fromIndex);
-            int toNode = manager.indexToNode(toIndex);
-            return distanceMatrix[fromNode][toNode];
-        });
-
-        routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
-
-        RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters()
-            .toBuilder()
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
-            .build();
-
-        Assignment solution = routing.solveWithParameters(searchParameters);
-
-        if (solution != null) {
-            long totalDistance = 0;
-            long index = routing.start(0);
-            while (!routing.isEnd(index)) {
-                long previousIndex = index;
-                index = solution.value(routing.nextVar(index));
-                totalDistance += routing.getArcCostForVehicle(previousIndex, index, 0);
+        for (int step = 1; step < n; step++) {
+            int next = -1;
+            long minDist = Long.MAX_VALUE;
+            for (int j = 0; j < n; j++) {
+                if (!visited[j] && distanceMatrix[current][j] < minDist) {
+                    minDist = distanceMatrix[current][j];
+                    next = j;
+                }
             }
-            return totalDistance;
-        } else {
-            throw new Exception();
+            route.add(next);
+            visited[next] = true;
+            current = next;
         }
+        // Optionally, add start to complete the cycle: route.add(start);
+        return route;
     }
 
-    private long[][] generateDistanceMatrix(UserLocation userLocation, List<Merchant> merchants) throws MerchantNotFoundException {
+    // Calculate total distance traveled for a given route
+    public static long calculateRouteDistance(List<Integer> route, long[][] distanceMatrix, boolean roundTrip) {
+        long total = 0L;
+        for (int i = 0; i < route.size() - 1; i++) {
+            int from = route.get(i);
+            int to = route.get(i + 1);
+            total += distanceMatrix[from][to];
+        }
+        if (roundTrip && route.size() > 1) {
+            total += distanceMatrix[route.get(route.size() - 1)][route.get(0)];
+        }
+        return total;
+    }
+
+    HashSet<Long> withinRange = new HashSet<>();
+    private long[][] generateDistanceMatrix(UserLocation userLocation, List<Merchant> merchants) throws MerchantTooFarException {
         long[][] distanceMatrix = new long[merchants.size()][merchants.size()];
         int startingJ = 0;
         for (int i = 0; i < merchants.size(); i++) {
-            for (int j = startingJ; i < merchants.size(); j++) {
-                Merchant starting = merchants.get(i);
-                long distanceFromUser = haversine(
-                    userLocation.getLat(),
-                    userLocation.getLat(),
-                    starting.getLocation().getY(),
-                    starting.getLocation().getX()
-                );
-                if (distanceFromUser > 3000) throw new MerchantNotFoundException("Merchant with id " + starting.getId() + " is too far: " + distanceFromUser + " meters (max: 3000 meters)");
-
+            Merchant starting = merchants.get(i);
+            if (!withinRange.contains((long)starting.getId())) {
+                Long distanceFromUser = haversine(
+                    userLocation.getLat(), 
+                    userLocation.getLon(), 
+                    starting.getLocation().getY(), 
+                    starting.getLocation().getX());
+                System.out.println("Distance from user to merchant " + starting.getId() + ": " + distanceFromUser + " meters");
+                if (distanceFromUser > 3000) throw new MerchantTooFarException("One or more merchants are too far from the user.");
+                withinRange.add((long)starting.getId());
+            }
+            for (int j = startingJ; j < merchants.size(); j++) {
                 if (j != i) {
                     Merchant dest = merchants.get(j);
                     long distance = haversine(

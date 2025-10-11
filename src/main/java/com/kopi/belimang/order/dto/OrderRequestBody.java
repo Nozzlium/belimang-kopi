@@ -19,6 +19,7 @@ public class OrderRequestBody {
     @NoArgsConstructor
     public static class UserLocation {
         private Double lat;
+        @JsonProperty("long")
         private Double lon;
     }
 

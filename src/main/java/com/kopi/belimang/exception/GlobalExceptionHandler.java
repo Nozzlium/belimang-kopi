@@ -47,12 +47,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MerchantNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleMerchantNotFoundException(MerchantNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Merchant not found"));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Merchant not found skibidi"));
     }
 
     @ExceptionHandler(ItemAndMerchantMismatchException.class)
     public ResponseEntity<ErrorResponse> handleItemAndMerchantMismatchException(ItemAndMerchantMismatchException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(MerchantTooFarException.class)
@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
         // Customize the response as needed
         ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                             .body(new ErrorResponse("Internal Server Error"));
+                             .body(new ErrorResponse("Internal Server Belimang"));
     }
 
     @ExceptionHandler(DuplicateCredentialException.class)
