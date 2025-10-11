@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: db
-          image: us-west1-docker.pkg.dev/projectsprint-000001/ps-docker-repo/team-kopi-db:v1
+          image: us-west1-docker.pkg.dev/projectsprint-000001/ps-docker-repo/team-kopi-db:v3
           ports:
             - containerPort: 5432
           env:
@@ -26,15 +26,17 @@ spec:
               value: belimang
             - name: POSTGRES_DB
               value: belimang
+            - name: POSTGRES_INITDB_ARGS
+              value: "--data-checksums"
+            - name: PG_SHARED_MEMORY
+              value: "2GB"
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "500m"
+               memory: "4Gi"    # Request 4 GiB
+               cpu: "1000m"     # Request 1 core
             limits:
-              memory: "1Gi"
-              cpu: "1000m"
-
-
+               memory: "8Gi"    # Limit 8 GiB
+               cpu: "2000m"     # Limit 2 core
 ---
 apiVersion: v1
 kind: Service
