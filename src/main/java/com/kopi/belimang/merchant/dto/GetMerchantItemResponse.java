@@ -13,7 +13,7 @@ public class GetMerchantItemResponse {
     @Data
     @Builder
     public static class MerchantItemResponse {
-        private Long itemId;
+        private String itemId;
         private String name;
         private String productCategory;
         private Long price;

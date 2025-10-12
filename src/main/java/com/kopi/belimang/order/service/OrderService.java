@@ -21,7 +21,7 @@ import com.kopi.belimang.core.entities.Order;
 import com.kopi.belimang.core.entities.OrderDetail;
 import com.kopi.belimang.core.entities.OrderItem;
 import com.kopi.belimang.merchant.dto.MerchantSearchCriteria;
-import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
+import com.kopi.belimang.merchant.exception.RowNotFoundException;
 import com.kopi.belimang.merchant.repository.MerchantItemRepository;
 import com.kopi.belimang.merchant.repository.MerchantRepository;
 import com.kopi.belimang.order.dto.OrderRequestBody;
@@ -65,7 +65,7 @@ public class OrderService {
     @Autowired
     private OrderDetailRepository orderDetailRepository;
 
-    public EstimateResponseBody estimate(OrderRequestBody orderRequestBody) throws ItemAndMerchantMismatchException, MerchantNotFoundException, NumberFormatException, Exception {
+    public EstimateResponseBody estimate(OrderRequestBody orderRequestBody) throws ItemAndMerchantMismatchException, RowNotFoundException, NumberFormatException, Exception {
         Long totalPrice = 0L;
 
         List<OrderMerchantRequestBody> orders = orderRequestBody.getOrders();
@@ -82,13 +82,13 @@ public class OrderService {
                 if (startingIndex != -1) throw new IllegalArgumentException("Starting point must be specified, status: " + startingIndex);
                 startingIndex = i;
             }
-            merchantIds.add(Long.parseLong(order.getMerchantId()));
             Long orderMerchantId;
             try {
                 orderMerchantId = Long.parseLong(order.getMerchantId());
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("One or more merchant IDs are not valid.");
+                throw new RowNotFoundException("One or more merchant IDs are not valid.");
             }
+            merchantIds.add(orderMerchantId);
             Merchant tempMerch = Merchant
                 .builder()
                 .id(orderMerchantId)
@@ -103,7 +103,7 @@ public class OrderService {
                 try {
                     orderMerchantItemid = Long.parseLong(item.getItemId());
                 } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("One or more item IDs are not valid.");
+                    throw new RowNotFoundException("One or more item IDs are not valid.");
                 }
                 itemIds.add(orderMerchantItemid);
                 MerchantItem tempItem = MerchantItem
@@ -197,18 +197,18 @@ public class OrderService {
         
         return EstimateResponseBody
             .builder()
-            .calculatedEstimateId(toSave.getId())
+            .calculatedEstimateId(toSave.getId().toString())
             .estimatedDeliveryTimeInMinutes(toSave.getEstimatedDeliveryTime())
             .totalPrice(toSave.getTotalPrice())
             .build();
     }
 
-    public OrderPlaceResponseBody placeOrder(OrderPlaceRequestBody requestBody) throws EntityNotFoundException {
+    public OrderPlaceResponseBody placeOrder(OrderPlaceRequestBody requestBody) throws IllegalArgumentException {
         Long orderId;
         try {
             orderId = Long.parseLong(requestBody.getCalculatedEstimateId());
         } catch (NumberFormatException e) {
-            throw new EntityNotFoundException("Calculated estimate ID is not valid.");
+            throw new IllegalArgumentException("Calculated estimate ID is not valid.");
         }
 
         Order order = orderRepository.updateHasOrderMadeFlag(orderId);
@@ -324,7 +324,6 @@ public class OrderService {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("One or more query parameters are not valid.");
         }
-        System.out.printf("Params - limit: %d, offset: %d, merchantId: %s, name: %s, merchantCategory: %s%n", limit, offset, merchantId, name, merchantCategory);
 
         List<Object[]> orders = orderRepository.findOrdersWithDetails(merchantId, name, merchantCategory, limit, offset);
         List<Long> orderIds = new ArrayList<>();

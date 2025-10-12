@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class EstimateResponseBody {
-    private Long calculatedEstimateId;
+    private String calculatedEstimateId;
     private Long estimatedDeliveryTimeInMinutes;
     private Long totalPrice;
 }

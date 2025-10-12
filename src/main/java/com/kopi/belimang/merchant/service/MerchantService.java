@@ -3,7 +3,7 @@ package com.kopi.belimang.merchant.service;
 import com.kopi.belimang.core.entities.Merchant;
 import com.kopi.belimang.core.entities.MerchantItem;
 import com.kopi.belimang.merchant.dto.*;
-import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
+import com.kopi.belimang.merchant.exception.RowNotFoundException;
 import com.kopi.belimang.merchant.repository.MerchantItemRepository;
 import com.kopi.belimang.merchant.repository.MerchantRepository;
 import jakarta.transaction.Transactional;
@@ -79,7 +79,7 @@ public class MerchantService {
 
     @Transactional
     public CreateMerchantItemResponse createMerchantItem(Long merchantId,CreateMerchantItemRequest request) {
-        merchantRepository.findById(merchantId).orElseThrow(()-> new MerchantNotFoundException(merchantId));
+        merchantRepository.findById(merchantId).orElseThrow(()-> new RowNotFoundException(merchantId));
         MerchantItem merchantItem = MerchantItem.builder()
                 .name(request.getName())
                 .merchant(Merchant.builder().id(merchantId).build())
@@ -137,7 +137,7 @@ public class MerchantService {
 
     private GetMerchantItemResponse.MerchantItemResponse convertToMerchantItemResponse(MerchantItem merchantItem) {
         return GetMerchantItemResponse.MerchantItemResponse.builder()
-                .itemId(merchantItem.getId())
+                .itemId(merchantItem.getId().toString())
                 .name(merchantItem.getName())
                 .price(merchantItem.getPrice())
                 .productCategory(merchantItem.getCategory())

@@ -13,6 +13,10 @@ public class StrictStringDeserializer extends JsonDeserializer<String> {
         if (!node.isTextual()) {
             throw new IllegalArgumentException();
         }
-        return node.asText();
+        String text = node.asText();
+        if (text.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        return text;
     }
 }

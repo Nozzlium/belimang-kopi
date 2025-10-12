@@ -24,6 +24,8 @@ import com.kopi.belimang.order.dto.OrderPlaceResponseBody;
 import com.kopi.belimang.order.dto.OrderRequestBody;
 import com.kopi.belimang.order.service.OrderService;
 
+import jakarta.validation.Valid;
+
 @RestController
 public class OrderController {
     
@@ -67,7 +69,7 @@ public class OrderController {
     @PostMapping("/users/estimate")
     @Guard(acceptedRoles = {"USER"})
     public ResponseEntity<EstimateResponseBody> estimateOrder(
-        @RequestBody OrderRequestBody requestBody
+        @Valid @RequestBody OrderRequestBody requestBody
     ) throws Exception {
         EstimateResponseBody resp = orderService.estimate(requestBody);
 
@@ -78,7 +80,7 @@ public class OrderController {
     @PostMapping("/users/orders")
     @Guard(acceptedRoles = {"USER"})
     public ResponseEntity<OrderPlaceResponseBody> createOrder(
-        @RequestBody OrderPlaceRequestBody requestBody
+        @Valid @RequestBody OrderPlaceRequestBody requestBody
     ) {
         OrderPlaceResponseBody resp = orderService.placeOrder(requestBody);
 

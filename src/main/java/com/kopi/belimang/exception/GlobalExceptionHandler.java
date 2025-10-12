@@ -1,7 +1,7 @@
 package com.kopi.belimang.exception;
 
 import com.kopi.belimang.auth.exceptions.DuplicateCredentialException;
-import com.kopi.belimang.merchant.exception.MerchantNotFoundException;
+import com.kopi.belimang.merchant.exception.RowNotFoundException;
 import com.kopi.belimang.order.exception.ItemAndMerchantMismatchException;
 import com.kopi.belimang.order.exception.MerchantTooFarException;
 
@@ -45,9 +45,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
     }
 
-    @ExceptionHandler(MerchantNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleMerchantNotFoundException(MerchantNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Merchant not found skibidi"));
+    @ExceptionHandler(RowNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMerchantNotFoundException(RowNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Merchant not found skubadiving"));
     }
 
     @ExceptionHandler(ItemAndMerchantMismatchException.class)

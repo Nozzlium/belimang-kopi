@@ -1,6 +1,5 @@
 package com.kopi.belimang.merchant.dto;
 
-import com.kopi.belimang.merchant.mapper.MerchantCategory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.jackson.Jacksonized;
