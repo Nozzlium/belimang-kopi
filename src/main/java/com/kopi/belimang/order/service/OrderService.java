@@ -29,6 +29,10 @@ import com.kopi.belimang.order.dto.NearbyMerchantResponse.LocationResponse;
 import com.kopi.belimang.order.dto.NearbyMerchantResponse.MerchantAndItemResponse;
 import com.kopi.belimang.order.dto.NearbyMerchantResponse.MerchantItemResponse;
 import com.kopi.belimang.order.dto.NearbyMerchantResponse.MerchantResponse;
+import com.kopi.belimang.order.dto.OrderListResponseBody.ItemDTO;
+import com.kopi.belimang.order.dto.OrderListResponseBody.LocationDTO;
+import com.kopi.belimang.order.dto.OrderListResponseBody.MerchantDTO;
+import com.kopi.belimang.order.dto.OrderListResponseBody.OrderGroup;
 import com.kopi.belimang.order.dto.EstimateResponseBody;
 import com.kopi.belimang.order.dto.GetAllOrdersParams;
 import com.kopi.belimang.order.dto.NearbyMerchantResponse;
@@ -180,7 +184,6 @@ public class OrderService {
         
         long[][] distanceMatrix = generateDistanceMatrix(orderRequestBody.getUserLocation(), tempMerchants);
         long distanceEstimate = calculateRouteDistance(tspNearestNeighbor(distanceMatrix, startingIndex), distanceMatrix, false);
-        System.out.println("Distance estimate: " + distanceEstimate + " meters");
         long estimateDeliveryTime = (distanceEstimate * 60) / 40000; // in minutes
 
         Order toSave = Order
@@ -303,7 +306,7 @@ public class OrderService {
                 .build();
     }
 
-    public OrderListResponseBody findAllOrders(GetAllOrdersParams params) {
+    public List<OrderListResponseBody> findAllOrders(GetAllOrdersParams params) {
         int limit;
         int offset;
         Long merchantId = null;
@@ -321,56 +324,83 @@ public class OrderService {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("One or more query parameters are not valid.");
         }
+        System.out.printf("Params - limit: %d, offset: %d, merchantId: %s, name: %s, merchantCategory: %s%n", limit, offset, merchantId, name, merchantCategory);
 
-        List<Order> orders = orderDetailRepository.findOrders(limit, offset, merchantId, name, merchantCategory);
-        List<OrderListResponseBody.OrderGroup> orderGroups = new ArrayList<>();
-
-        for (Order order : orders) {
-            for (OrderDetail orderDetail : order.getOrderDetails()) {
-                OrderListResponseBody.MerchantDTO merchantDTO = OrderListResponseBody.MerchantDTO
-                    .builder()
-                    .merchantId(orderDetail.getMerchant().getId().toString())
-                    .name(orderDetail.getMerchant().getName())
-                    .merchantCategory(orderDetail.getMerchant().getCategory())
-                    .imageUrl(orderDetail.getMerchant().getImageUrl())
-                    .location(OrderListResponseBody.LocationDTO
-                        .builder()
-                        .lat(orderDetail.getMerchant().getLocation().getY())
-                        .lon(orderDetail.getMerchant().getLocation().getX())
-                        .build()
-                    )
-                    .createdAt(orderDetail.getMerchant().getCreatedAt().toString())
-                    .build();
-
-                List<OrderListResponseBody.ItemDTO> itemDTOs = new ArrayList<>();
-                for (OrderItem item : orderDetail.getItems()) {
-                    itemDTOs.add(OrderListResponseBody.ItemDTO
-                        .builder()
-                        .itemId(item.getItemId().toString())
-                        .name(item.getName())
-                        .productCategory(item.getCategory())
-                        .price(item.getPrice())
-                        .quantity(item.getQuantity())
-                        .imageUrl(item.getImageUrl())
-                        .createdAt(item.getCreatedAt().toString())
-                        .build()
-                    );
-                }
-
-                orderGroups.add(OrderListResponseBody.OrderGroup
-                    .builder()
-                    .orderId(order.getId().toString())
-                    .merchant(merchantDTO)
-                    .items(itemDTOs)
-                    .build()
-                );
-            }
+        List<Object[]> orders = orderRepository.findOrdersWithDetails(merchantId, name, merchantCategory, limit, offset);
+        List<Long> orderIds = new ArrayList<>();
+        HashMap<Long, OrderListResponseBody> orderMap = new HashMap<>();
+        for (Object[] row: orders) {
+            Long orderId = ((Number) row[0]).longValue();
+            if (!orderIds.contains(orderId)) orderIds.add(orderId);
+            OrderListResponseBody olrb = OrderListResponseBody
+                .builder()
+                .orderId(orderId.toString())
+                .orders(new ArrayList<>())
+                .build();
+            orderMap.put(orderId, olrb);
         }
 
-        return OrderListResponseBody
-            .builder()
-            .orders(orderGroups)
-            .build();
+        List<Object[]> orderDetails = orderDetailRepository.findOrdersDetails(orderIds);
+        Map<Long, OrderGroup> orderGroupMap = new HashMap<>();
+        for (Object[] row : orderDetails) {
+            Long orderDetailId = ((Number) row[0]).longValue();
+            OrderGroup og;
+            if (orderGroupMap.containsKey(orderDetailId)) {
+                og = orderGroupMap.get(orderDetailId);
+            } else {
+                Object merchantCreatedAt = row[7]; // handle as needed
+                ZonedDateTime merchantZonedCreatedAt = null;
+                if (merchantCreatedAt instanceof java.sql.Timestamp) {
+                    merchantZonedCreatedAt = ((java.sql.Timestamp) merchantCreatedAt).toInstant().atZone(ZoneId.systemDefault());
+                }
+                og = OrderGroup
+                    .builder()
+                    .orderId((Long)row[15])
+                    .merchant(MerchantDTO.builder()
+                        .merchantId(row[1] != null ? row[1].toString() : null)
+                        .name((String) row[2])
+                        .merchantCategory((String) row[3])
+                        .imageUrl((String) row[4])
+                        .location(LocationDTO.builder()
+                            .lat((Double) row[5])
+                            .lon((Double) row[6])
+                            .build())
+                        .createdAt(merchantZonedCreatedAt)
+                        .build())
+                    .items(new ArrayList<>())
+                    .build();
+                orderGroupMap.put(orderDetailId, og);
+            }
+            Long itemId = row[8] != null ? ((Number) row[8]).longValue() : null;
+            if (itemId == null) continue; // no item associated
+            String itemName = (String) row[9];
+            String productCategory = (String) row[10];
+            Long price = row[11] != null ? ((Number) row[11]).longValue() : 0;
+            Integer quantity = row[12] != null ? ((Number) row[12]).intValue() : 0;
+            String itemImageUrl = (String) row[13];
+            Object itemCreatedAt = row[14]; // handle as needed
+            ZonedDateTime itemZonedCreatedAt = null;
+            if (itemCreatedAt instanceof java.sql.Timestamp) {
+                itemZonedCreatedAt = ((java.sql.Timestamp) itemCreatedAt).toInstant().atZone(ZoneId.systemDefault());
+            }
+            ItemDTO item = ItemDTO.builder()
+                .itemId(itemId.toString())
+                .name(itemName)
+                .productCategory(productCategory)
+                .price(price)
+                .quantity(quantity)
+                .imageUrl(itemImageUrl)
+                .createdAt(itemZonedCreatedAt)
+                .build();
+            og.getItems().add(item);
+        }
+
+        for (OrderGroup orderGroup : orderGroupMap.values()) {
+            OrderListResponseBody olrb = orderMap.get(orderGroup.getOrderId());
+            olrb.getOrders().add(orderGroup);
+        }
+
+        return orderMap.values().stream().toList();
     }
 
     public static List<Integer> tspNearestNeighbor(long[][] distanceMatrix, int start) {
@@ -424,7 +454,6 @@ public class OrderService {
                     userLocation.getLon(), 
                     starting.getLocation().getY(), 
                     starting.getLocation().getX());
-                System.out.println("Distance from user to merchant " + starting.getId() + ": " + distanceFromUser + " meters");
                 if (distanceFromUser > 3000) throw new MerchantTooFarException("One or more merchants are too far from the user.");
                 withinRange.add((long)starting.getId());
             }

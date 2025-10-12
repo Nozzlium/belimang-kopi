@@ -1,6 +1,11 @@
 package com.kopi.belimang.order.dto;
 
+import java.time.ZonedDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,6 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class OrderListResponseBody {
+    private String orderId;
     private List<OrderGroup> orders;
 
     @Data
@@ -19,7 +25,8 @@ public class OrderListResponseBody {
     @AllArgsConstructor
     @Builder
     public static class OrderGroup {
-        private String orderId;
+        @JsonIgnore
+        private Long orderId;
         private MerchantDTO merchant;
         private List<ItemDTO> items;
     }
@@ -34,7 +41,8 @@ public class OrderListResponseBody {
         private String merchantCategory;
         private String imageUrl;
         private LocationDTO location;
-        private String createdAt; // ISO 8601 with nanoseconds
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS'Z'")
+        private ZonedDateTime createdAt; // ISO 8601 with nanoseconds
     }
 
     @Data
@@ -43,6 +51,7 @@ public class OrderListResponseBody {
     @Builder
     public static class LocationDTO {
         private double lat;
+        @JsonProperty("long")
         private double lon;
     }
 
@@ -57,6 +66,7 @@ public class OrderListResponseBody {
         private long price;
         private int quantity;
         private String imageUrl;
-        private String createdAt; // ISO 8601 with nanoseconds
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS'Z'")
+        private ZonedDateTime createdAt; // ISO 8601 with nanoseconds
     }
 }

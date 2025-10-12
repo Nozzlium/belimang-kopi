@@ -7,29 +7,36 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.kopi.belimang.core.entities.Order;
 import com.kopi.belimang.core.entities.OrderDetail;
 
 @Repository
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> {
     
     @Query(value = """
-        SELECT 
-            o.*
-        FROM order_details od
-        LEFT JOIN merchants m ON od.merchant_id = m.id
-        LEFT JOIN order_items oi ON od.id = oi.order_detail_id
-        WHERE (:merchantId IS NULL OR m.id = :merchantId)
-        AND (:name IS NULL OR m.name ILIKE CONCAT('%', :name, '%') OR oi.name ILIKE CONCAT('%', :name, '%'))
-        AND (:merchantCategory IS NULL OR m.category = :merchantCategory)
-        LIMIT :limit OFFSET :offset
-        """,
-        nativeQuery = true)
-    public List<Order> findOrders(
-        @Param("limit") int limit,
-        @Param("offset") int offset,
-        @Param("merchantId") Long merchantId,
-        @Param("name") String name,
-        @Param("merchantCategory") String merchantCategory
+    SELECT
+        od.id as orderDetailId,
+        m.id AS merchantId,
+        m.name AS merchantName,
+        m.category AS merchantCategory,
+        m.image_url AS merchantImageUrl,
+        ST_Y(m.location::geometry) AS lat, 
+        ST_X(m.location::geometry) AS lon,
+        m.created_at AS merchantCreatedAt,
+        i.id AS itemId,
+        i.name AS itemName,
+        i.category AS productCategory,
+        i.price AS price,
+        i.quantity AS quantity,
+        i.image_url AS itemImageUrl,
+        i.created_at AS itemCreatedAt,
+        od.order_id as orderId
+    FROM order_details od 
+    LEFT JOIN merchants m ON od.merchant_id = m.id
+    LEFT JOIN order_items i ON od.id = i.order_detail_id
+    WHERE 
+        od.order_id IN (:orderIds)
+    """, nativeQuery = true)
+    List<Object[]> findOrdersDetails(
+        @Param("orderIds") List<Long> orderIds
     );
 }

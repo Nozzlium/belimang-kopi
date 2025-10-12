@@ -21,10 +21,6 @@ public class OrderItem {
     @Column(nullable = false)
     private Long itemId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "order_detail_id", referencedColumnName = "id")
-    private OrderDetail orderDetail;
-
     @Column(nullable = false)
     private String category;
 

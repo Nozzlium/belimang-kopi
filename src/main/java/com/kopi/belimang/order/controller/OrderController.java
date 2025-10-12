@@ -1,7 +1,11 @@
 package com.kopi.belimang.order.controller;
 
 import com.kopi.belimang.auth.core.guard.Guard;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,13 +82,13 @@ public class OrderController {
     ) {
         OrderPlaceResponseBody resp = orderService.placeOrder(requestBody);
 
-        return ResponseEntity.ok().body(resp);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
     }
 
     // GET /users/orders
     @GetMapping("/users/orders")
     @Guard(acceptedRoles = {"USER"})
-    public ResponseEntity<OrderListResponseBody> getOrders(
+    public ResponseEntity<List<OrderListResponseBody>> getOrders(
         @RequestParam(required = false) String merchantId,
         @RequestParam(required = false) String limit,
         @RequestParam(required = false) String offset,
@@ -107,7 +111,7 @@ public class OrderController {
             .name(name)
             .merchantCategory(merchantCategory)
             .build();
-        OrderListResponseBody resp = orderService.findAllOrders(params);
+        List<OrderListResponseBody> resp = orderService.findAllOrders(params);
 
         return ResponseEntity.ok().body(resp);
     }
